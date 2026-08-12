@@ -12,10 +12,11 @@ def main():
         name="Línea de Prueba"
     )
 
-    # Estaciones
+    # Estaciones (agregamos S03 para probar la salida de S02)
     stations = [
         Station("S01", "Terminal Norte", 0.0),
-        Station("S02", "Central", 2.5)
+        Station("S02", "Central", 2.5),
+        Station("S03", "Terminal Sur", 5.0)
     ]
 
     for station in stations:
@@ -31,6 +32,7 @@ def main():
     train.current_station = stations[0]
     train.next_station = stations[1]
 
+    # Al agregar el tren, Line le asigna automáticamente train.line = line
     line.add_train(train)
 
     # Simulación
@@ -40,28 +42,22 @@ def main():
     print("=== METROSIM ===")
     print()
     print("Ruta:")
-    print("S01 Terminal Norte")
-    print("       ↓")
+    print("S01 Terminal Norte (0.0 km)")
     print("       ↓ 2.5 km")
-    print("       ↓")
-    print("S02 Central")
+    print("S02 Central (2.5 km)")
+    print("       ↓ 2.5 km")
+    print("S03 Terminal Sur (5.0 km)")
     print()
 
-    # Simulación
-    for _ in range(300):
+    # Ejecutamos 400 ticks para ver el trayecto completo S01 -> S02 -> S03
+    for _ in range(400):
 
         simulation.update()
 
         print(
-            f"Tiempo: "
-            f"{simulation.current_time:.0f}s | "
+            f"Tiempo: {simulation.current_time:.0f}s | "
             f"{train}"
         )
-
-        if train.state == "EN ESTACIÓN":
-            print()
-            print("¡El tren llegó a S02!")
-            break
 
 
 if __name__ == "__main__":

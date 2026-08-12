@@ -16,8 +16,8 @@ class Line:
         self.stations.append(station)
 
     def add_train(self, train):
-        """Agrega un tren a la línea."""
-
+        """Agrega un tren a la línea y le asigna la referencia de la línea."""
+        train.line = self
         self.trains.append(train)
 
     def remove_station(self, station_id):
@@ -53,6 +53,20 @@ class Line:
         for train in self.trains:
             if train.train_id == train_id:
                 return train
+
+        return None
+
+    def get_next_station(self, current_station):
+        """
+        Dada una estación actual, retorna la siguiente estación en la línea.
+        Retorna None si es la terminal final.
+        """
+        if current_station not in self.stations:
+            return None
+
+        current_index = self.stations.index(current_station)
+        if current_index + 1 < len(self.stations):
+            return self.stations[current_index + 1]
 
         return None
 
