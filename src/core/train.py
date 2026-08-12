@@ -50,18 +50,21 @@ class Train:
         if distance is None:
             return
 
-        # LÓGICA TRASLADADA DESDE SIMULATION
+        # Si estamos a menos de 1 metro (0.001 km), consideramos llegada exitosa
         if distance <= 0.001:
             self.position = self.next_station.position
             self.speed = 0.0
             self.state = TrainState.EN_ESTACION
             return
 
-        # Cálculo de distancia de frenado
+        # Distancia teórica física de frenado (km)
         braking_distance = (self.speed ** 2) / (2 * self.braking * 3600)
 
-        # Decisiones de estado
-        if distance <= braking_distance + 0.05:
+        # Margen dinámico: 10% adicional por seguridad física + 1 metro de tolerancia
+        safety_braking_distance = (braking_distance * 1.1) + 0.001
+
+        # Solo frena si el tren está en movimiento y la distancia es crítica
+        if self.speed > 0 and distance <= safety_braking_distance:
             self.brake()
             self.state = TrainState.FRENANDO
         elif self.speed < self.max_speed:
