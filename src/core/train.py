@@ -101,6 +101,23 @@ class Train:
             self.state = TrainState.PUERTAS_ABIERTAS
             self.dwell_timer = self.dwell_time
 
+            # --- INTERCAMBIO DE PASAJEROS ---
+            if self.current_station:
+                # 1. Bajan pasajeros (ej. 40% si hay siguiente estación, o 100% si es terminal)
+                if self.line and self.line.get_next_station(self.current_station) is None:
+                    leaving_ratio = 1.0  # Terminal final: bajan todos
+                else:
+                    leaving_ratio = 0.4  # Estación intermedia: baja un porcentaje
+
+                passengers_leaving = int(self.passengers * leaving_ratio)
+                self.leave_passengers(passengers_leaving)
+
+                # 2. Suben pasajeros desde el andén
+                waiting = self.current_station.passengers_waiting
+                if waiting > 0:
+                    boarded = self.board_passengers(waiting)
+                    self.current_station.remove_passengers(boarded)
+
         elif self.state == TrainState.PUERTAS_ABIERTAS:
             self.dwell_timer -= 1.0
             if self.dwell_timer <= 0:
@@ -163,5 +180,6 @@ class Train:
             f"Posición: {self.position:.3f} km | "
             f"Destino: {next_station} | "
             f"Distancia: {distance_text} | "
+            f"Pasajeros: {self.passengers}/{self.capacity} | "
             f"Estado: {self.state.name}"
         )
