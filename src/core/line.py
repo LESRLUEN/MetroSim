@@ -73,6 +73,36 @@ class Line:
 
         return None
 
+    def get_train_ahead(self, train):
+        """
+        Retorna el tren que circula inmediatamente adelante en el mismo sentido,
+        o None si no hay ningún tren adelante.
+        """
+        trains_ahead = []
+
+        for other in self.trains:
+            if other.train_id == train.train_id:
+                continue
+
+            # Mismo sentido de circulación
+            if other.direction == train.direction:
+                # Sentido Ida (1): El otro está en una posición mayor
+                if train.direction == 1 and other.position > train.position:
+                    dist = other.position - train.position
+                    trains_ahead.append((dist, other))
+
+                # Sentido Vuelta (-1): El otro está en una posición menor
+                elif train.direction == -1 and other.position < train.position:
+                    dist = train.position - other.position
+                    trains_ahead.append((dist, other))
+
+        if not trains_ahead:
+            return None
+
+        # Ordenar por cercanía y retornar el más próximo
+        trains_ahead.sort(key=lambda x: x[0])
+        return trains_ahead[0][1]
+
     def __str__(self):
         return (
             f"Línea {self.line_id} - {self.name} | "

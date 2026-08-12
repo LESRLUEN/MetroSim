@@ -41,33 +41,49 @@ class Train:
         self.next_station = None
 
     def update(self):
-        """Máquina de estados finita (FSM)."""
+        """Máquina de estados finita (FSM) con control de distancia de seguridad."""
         if self.state in (
-                TrainState.EN_ESTACION,
-                TrainState.ABRIENDO_PUERTAS,
-                TrainState.PUERTAS_ABIERTAS,
-                TrainState.CERRANDO_PUERTAS,
-                TrainState.ESPERANDO_SALIDA
+            TrainState.EN_ESTACION,
+            TrainState.ABRIENDO_PUERTAS,
+            TrainState.PUERTAS_ABIERTAS,
+            TrainState.CERRANDO_PUERTAS,
+            TrainState.ESPERANDO_SALIDA
         ):
             self._handle_station_sequence()
             return
 
-        distance = self.distance_to_next_station()
+        # 1. Distancia a la estación objetiva
+        dist_station = self.distance_to_next_station()
 
-        if distance is None:
+        # 2. Distancia al tren que circula adelante (si existe)
+        dist_train_ahead = None
+        if self.line:
+            ahead = self.line.get_train_ahead(self)
+            if ahead:
+                # Se aplica un margen de seguridad rígido de 0.050 km (50 metros)
+                dist_train_ahead = max(abs(ahead.position - self.position) - 0.050, 0.0)
+
+        # 3. Determinar la distancia restrictiva más próxima
+        distances = [d for d in (dist_station, dist_train_ahead) if d is not None]
+        if not distances:
             return
 
-        if distance <= 0.001:
+        effective_distance = min(distances)
+
+        # 4. Condición de llegada a estación
+        if dist_station is not None and effective_distance == dist_station and dist_station <= 0.001:
             self.position = self.next_station.position
             self.speed = 0.0
             self.current_station = self.next_station
             self.state = TrainState.EN_ESTACION
             return
 
+        # 5. Cálculo de distancia de frenado
         braking_distance = (self.speed ** 2) / (2 * self.braking * 3600)
         safety_braking_distance = (braking_distance * 1.1) + 0.001
 
-        if self.speed > 0 and distance <= safety_braking_distance:
+        # 6. Toma de decisiones cinemáticas
+        if self.speed > 0 and effective_distance <= safety_braking_distance:
             self.brake()
             self.state = TrainState.FRENANDO
         elif self.speed < self.max_speed:

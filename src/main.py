@@ -1,68 +1,48 @@
 from core.station import Station
-from core.train import Train
 from core.train import Train, TrainState
 from core.line import Line
 from core.simulation import Simulation
 
 
 def main():
+    line = Line("L1", "Línea de Prueba")
 
-    # Línea
-    line = Line(
-        line_id="L1",
-        name="Línea de Prueba"
-    )
-
-    # Estaciones (agregamos S03 para probar la salida de S02)
-    # Estaciones con afluencia dinámica (pasajeros/segundo)
     stations = [
-        Station("S01", "Terminal Norte", 0.0, spawn_rate=0.2),  # 1 pas. cada 5 seg.
-        Station("S02", "Central", 2.5, spawn_rate=1.5),  # 3 pas. cada 2 seg. (Estación de alto flujo)
-        Station("S03", "Terminal Sur", 5.0, spawn_rate=0.1)  # 1 pas. cada 10 seg.
+        Station("S01", "Terminal Norte", 0.0, spawn_rate=0.5),
+        Station("S02", "Central", 2.5, spawn_rate=1.0),
+        Station("S03", "Terminal Sur", 5.0, spawn_rate=0.2)
     ]
-
-
 
     for station in stations:
         line.add_station(station)
 
-    # Tren
-    train = Train(
-        train_id="M-001",
-        capacity=1200,
-        max_speed=70
-    )
+    # Tren 1 (M-001)
+    train1 = Train("M-001", max_speed=60)
+    train1.current_station = stations[0]
+    train1.position = stations[0].position
+    train1.state = TrainState.EN_ESTACION
+    line.add_train(train1)
 
-    train.current_station = stations[0]
-    train.position = stations[0].position
-    train.state = TrainState.EN_ESTACION
+    # Tren 2 (M-002) - Inicia en S01 detenido
+    train2 = Train("M-002", max_speed=70)
+    train2.current_station = stations[0]
+    train2.position = stations[0].position
+    train2.state = TrainState.DETENIDO
+    line.add_train(train2)
 
-    # Al agregar el tren, Line le asigna automáticamente train.line = line
-    line.add_train(train)
-
-    # Simulación
     simulation = Simulation()
     simulation.add_line(line)
 
-    print("=== METROSIM ===")
-    print()
-    print("Ruta:")
-    print("S01 Terminal Norte (0.0 km)")
-    print("       ↓ 2.5 km")
-    print("S02 Central (2.5 km)")
-    print("       ↓ 2.5 km")
-    print("S03 Terminal Sur (5.0 km)")
-    print()
-
-    # Ejecutamos 800 ticks para ver el trayecto completo S01 -> S02 -> S03
-    for _ in range(800):
+    for tick in range(600):
+        # A los 30 segundos despachamos a M-002 desde S01
+        if tick == 30:
+            train2.state = TrainState.EN_ESTACION
 
         simulation.update()
 
-        print(
-            f"Tiempo: {simulation.current_time:.0f}s | "
-            f"{train}"
-        )
+        print(f"Tiempo: {simulation.current_time:.0f}s | {train1}")
+        print(f"Tiempo: {simulation.current_time:.0f}s | {train2}")
+        print("-" * 80)
 
 
 if __name__ == "__main__":
