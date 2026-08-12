@@ -56,17 +56,20 @@ class Line:
 
         return None
 
-    def get_next_station(self, current_station):
+    def get_next_station(self, current_station, direction=1):
         """
-        Dada una estación actual, retorna la siguiente estación en la línea.
-        Retorna None si es la terminal final.
+        Dada una estación actual y una dirección (1: ida, -1: vuelta),
+        retorna la siguiente estación en la línea.
+        Retorna None si se alcanzó la terminal en esa dirección.
         """
         if current_station not in self.stations:
             return None
 
         current_index = self.stations.index(current_station)
-        if current_index + 1 < len(self.stations):
-            return self.stations[current_index + 1]
+        next_index = current_index + direction
+
+        if 0 <= next_index < len(self.stations):
+            return self.stations[next_index]
 
         return None
 

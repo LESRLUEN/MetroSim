@@ -2,7 +2,6 @@ from enum import Enum, auto
 
 
 class TrainState(Enum):
-    """Estados posibles de la máquina de estados del tren."""
     DETENIDO = auto()
     ACELERANDO = auto()
     EN_MARCHA = auto()
@@ -22,36 +21,27 @@ class Train:
             max_speed=60.0
     ):
         self.train_id = train_id
-
-        # Capacidad y pasajeros
         self.capacity = capacity
         self.passengers = 0
 
-        # Movimiento
         self.position = 0.0
         self.speed = 0.0
+        self.direction = 1  # 1: Ida (ascendente), -1: Vuelta (descendente)
 
-        # Parámetros de operación
         self.max_speed = max_speed
         self.acceleration = 1.0
         self.braking = 2.0
 
-        # Tiempos de operación (en ticks/segundos)
-        self.dwell_time = 10.0  # Tiempo que duran las puertas abiertas
+        self.dwell_time = 10.0
         self.dwell_timer = 0.0
 
-        # Estado inicial
         self.state = TrainState.DETENIDO
-
-        # Estaciones y Línea
         self.line = None
         self.current_station = None
         self.next_station = None
 
     def update(self):
         """Máquina de estados finita (FSM)."""
-
-        # 1. Si el tren está realizando la secuencia de estación
         if self.state in (
                 TrainState.EN_ESTACION,
                 TrainState.ABRIENDO_PUERTAS,
@@ -62,13 +52,11 @@ class Train:
             self._handle_station_sequence()
             return
 
-        # 2. Conducción hacia la siguiente estación
         distance = self.distance_to_next_station()
 
         if distance is None:
             return
 
-        # Llegada a estación
         if distance <= 0.001:
             self.position = self.next_station.position
             self.speed = 0.0
@@ -76,7 +64,6 @@ class Train:
             self.state = TrainState.EN_ESTACION
             return
 
-        # Distancia teórica física de frenado (km)
         braking_distance = (self.speed ** 2) / (2 * self.braking * 3600)
         safety_braking_distance = (braking_distance * 1.1) + 0.001
 
@@ -92,8 +79,7 @@ class Train:
         self.update_position()
 
     def _handle_station_sequence(self):
-        """Gestiona la secuencia temporal dentro de la estación."""
-
+        """Gestiona la secuencia temporal dentro de la estación e inversión en terminales."""
         if self.state == TrainState.EN_ESTACION:
             self.state = TrainState.ABRIENDO_PUERTAS
 
@@ -101,18 +87,14 @@ class Train:
             self.state = TrainState.PUERTAS_ABIERTAS
             self.dwell_timer = self.dwell_time
 
-            # --- INTERCAMBIO DE PASAJEROS ---
             if self.current_station:
-                # 1. Bajan pasajeros (ej. 40% si hay siguiente estación, o 100% si es terminal)
-                if self.line and self.line.get_next_station(self.current_station) is None:
-                    leaving_ratio = 1.0  # Terminal final: bajan todos
-                else:
-                    leaving_ratio = 0.4  # Estación intermedia: baja un porcentaje
+                # Si en la dirección actual no hay más estaciones, es terminal (bajan todos)
+                next_check = self.line.get_next_station(self.current_station, self.direction) if self.line else None
+                leaving_ratio = 1.0 if next_check is None else 0.4
 
                 passengers_leaving = int(self.passengers * leaving_ratio)
                 self.leave_passengers(passengers_leaving)
 
-                # 2. Suben pasajeros desde el andén
                 waiting = self.current_station.passengers_waiting
                 if waiting > 0:
                     boarded = self.board_passengers(waiting)
@@ -127,15 +109,19 @@ class Train:
             self.state = TrainState.ESPERANDO_SALIDA
 
         elif self.state == TrainState.ESPERANDO_SALIDA:
-            # Calcular siguiente estación si estamos asignados a una línea
             if self.line:
-                next_st = self.line.get_next_station(self.current_station)
+                next_st = self.line.get_next_station(self.current_station, self.direction)
+
+                # Inversión de marcha si alcanzamos la terminal
+                if next_st is None:
+                    self.direction *= -1
+                    next_st = self.line.get_next_station(self.current_station, self.direction)
+
                 if next_st:
                     self.next_station = next_st
                     self.accelerate()
                     self.state = TrainState.ACELERANDO
                 else:
-                    # Fin de terminal / Fin de línea
                     self.state = TrainState.DETENIDO
 
     def accelerate(self):
@@ -149,13 +135,15 @@ class Train:
             self.speed = 0.0
 
     def update_position(self):
-        distance = self.speed / 3600
-        self.position += distance
+        """Actualiza la posición avanzando o retrocediendo según la dirección."""
+        distance_step = (self.speed / 3600) * self.direction
+        self.position += distance_step
 
     def distance_to_next_station(self):
+        """Calcula la distancia absoluta restante a la siguiente estación."""
         if self.next_station is None:
             return None
-        distance = self.next_station.position - self.position
+        distance = abs(self.next_station.position - self.position)
         return max(distance, 0.0)
 
     def board_passengers(self, amount):
@@ -173,9 +161,10 @@ class Train:
         next_station = self.next_station.station_id if self.next_station else "N/A"
         distance = self.distance_to_next_station()
         distance_text = f"{distance:.3f} km" if distance is not None else "N/A"
+        dir_text = "→" if self.direction == 1 else "←"
 
         return (
-            f"Tren {self.train_id} | "
+            f"Tren {self.train_id} {dir_text} | "
             f"Velocidad: {self.speed:.1f} km/h | "
             f"Posición: {self.position:.3f} km | "
             f"Destino: {next_station} | "

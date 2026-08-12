@@ -1,5 +1,6 @@
 from core.station import Station
 from core.train import Train
+from core.train import Train, TrainState
 from core.line import Line
 from core.simulation import Simulation
 
@@ -19,6 +20,11 @@ def main():
         Station("S03", "Terminal Sur", 5.0)
     ]
 
+    # --- AQUÍ SE AGREGAN LOS PASAJEROS EN ESPERA ---
+    stations[0].add_passengers(300)  # 300 personas esperando en S01
+    stations[1].add_passengers(500)  # 500 personas esperando en S02
+    stations[2].add_passengers(150)  # 150 personas esperando en S03
+
     for station in stations:
         line.add_station(station)
 
@@ -26,11 +32,12 @@ def main():
     train = Train(
         train_id="M-001",
         capacity=1200,
-        max_speed=60
+        max_speed=70
     )
 
     train.current_station = stations[0]
-    train.next_station = stations[1]
+    train.position = stations[0].position
+    train.state = TrainState.EN_ESTACION
 
     # Al agregar el tren, Line le asigna automáticamente train.line = line
     line.add_train(train)
@@ -49,8 +56,8 @@ def main():
     print("S03 Terminal Sur (5.0 km)")
     print()
 
-    # Ejecutamos 400 ticks para ver el trayecto completo S01 -> S02 -> S03
-    for _ in range(400):
+    # Ejecutamos 800 ticks para ver el trayecto completo S01 -> S02 -> S03
+    for _ in range(800):
 
         simulation.update()
 
