@@ -14,16 +14,14 @@ def main():
     )
 
     # Estaciones (agregamos S03 para probar la salida de S02)
+    # Estaciones con afluencia dinámica (pasajeros/segundo)
     stations = [
-        Station("S01", "Terminal Norte", 0.0),
-        Station("S02", "Central", 2.5),
-        Station("S03", "Terminal Sur", 5.0)
+        Station("S01", "Terminal Norte", 0.0, spawn_rate=0.2),  # 1 pas. cada 5 seg.
+        Station("S02", "Central", 2.5, spawn_rate=1.5),  # 3 pas. cada 2 seg. (Estación de alto flujo)
+        Station("S03", "Terminal Sur", 5.0, spawn_rate=0.1)  # 1 pas. cada 10 seg.
     ]
 
-    # --- AQUÍ SE AGREGAN LOS PASAJEROS EN ESPERA ---
-    stations[0].add_passengers(300)  # 300 personas esperando en S01
-    stations[1].add_passengers(500)  # 500 personas esperando en S02
-    stations[2].add_passengers(150)  # 150 personas esperando en S03
+
 
     for station in stations:
         line.add_station(station)

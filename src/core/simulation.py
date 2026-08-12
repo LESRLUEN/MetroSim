@@ -18,8 +18,12 @@ class Simulation:
         self.current_time += self.tick_duration
 
         for line in self.lines:
+            # Actualizar afluencia de pasajeros en estaciones
+            for station in line.stations:
+                station.update()
+
+            # Actualizar movimiento y FSM de trenes
             for train in line.trains:
-                # Ahora delegamos la responsabilidad al propio tren
                 train.update()
 
     def start(self):
