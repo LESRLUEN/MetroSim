@@ -43,14 +43,12 @@ class Train:
         self.next_station = None
 
     def update(self):
-
-        """Máquina de estados finita (FSM) con control de incidencias."""
-        # Si el tren está en falla o emergencia, frena completamente y congela su estado
+        """Máquina de estados finita (FSM) con control de distancia de seguridad e incidencias."""
+        # Si el tren está en falla o emergencia, frena completamente
         if self.state in (TrainState.FALLA, TrainState.EMERGENCIA):
             self.brake()
             return
 
-        """Máquina de estados finita (FSM) con control de distancia de seguridad."""
         if self.state in (
             TrainState.EN_ESTACION,
             TrainState.ABRIENDO_PUERTAS,
@@ -69,7 +67,6 @@ class Train:
         if self.line:
             ahead = self.line.get_train_ahead(self)
             if ahead:
-                # Se aplica un margen de seguridad rígido de 0.050 km (50 metros)
                 dist_train_ahead = max(abs(ahead.position - self.position) - 0.050, 0.0)
 
         # 3. Determinar la distancia restrictiva más próxima
@@ -91,10 +88,13 @@ class Train:
         braking_distance = (self.speed ** 2) / (2 * self.braking * 3600)
         safety_braking_distance = (braking_distance * 1.1) + 0.001
 
-        # 6. Toma de decisiones cinemáticas
-        if self.speed > 0 and effective_distance <= safety_braking_distance:
+        # 6. Toma de decisiones cinemáticas (CORREGIDO)
+        if effective_distance <= safety_braking_distance:
             self.brake()
-            self.state = TrainState.FRENANDO
+            if self.speed == 0.0:
+                self.state = TrainState.DETENIDO
+            else:
+                self.state = TrainState.FRENANDO
         elif self.speed < self.max_speed:
             self.accelerate()
             self.state = TrainState.ACELERANDO
