@@ -11,6 +11,8 @@ class TrainState(Enum):
     PUERTAS_ABIERTAS = auto()
     CERRANDO_PUERTAS = auto()
     ESPERANDO_SALIDA = auto()
+    FALLA = auto()  # <-- Avería mecánica / traba de puertas
+    EMERGENCIA = auto()  # <-- Frenado de emergencia por usuario u obstrucción
 
 
 class Train:
@@ -41,6 +43,13 @@ class Train:
         self.next_station = None
 
     def update(self):
+
+        """Máquina de estados finita (FSM) con control de incidencias."""
+        # Si el tren está en falla o emergencia, frena completamente y congela su estado
+        if self.state in (TrainState.FALLA, TrainState.EMERGENCIA):
+            self.brake()
+            return
+
         """Máquina de estados finita (FSM) con control de distancia de seguridad."""
         if self.state in (
             TrainState.EN_ESTACION,
